@@ -73,7 +73,6 @@ def load_user(user_id):
 # 🔥 CRITICAL FIX: Create ALL tables automatically
 with app.app_context():
     db.create_all()
-
 @app.route('/')
 @login_required
 def home():
@@ -88,29 +87,29 @@ def home():
         else datetime.date(today.year, today.month + 1, 1)
     )
 
-    pagination = Expense.query.filter(
+    # ✅ FIX 1: Handle empty expenses (no crash)
+    expenses_query = Expense.query.filter(
         Expense.user_id == current_user.id,
         Expense.date >= first_day,
         Expense.date < next_month_first_day
-    ).paginate(page=page, per_page=per_page)
+    )
+    
+    pagination = expenses_query.paginate(page=page, per_page=per_page)
+    expenses_for_chart = expenses_query.all()
 
+    # ✅ FIX 2: Safe chart data (handle empty expenses)
     daily_spending = defaultdict(float)
-    expenses_for_chart = Expense.query.filter(
-        Expense.user_id == current_user.id,
-        Expense.date >= first_day,
-        Expense.date < next_month_first_day
-    ).all()
-
     for expense in expenses_for_chart:
         day_str = expense.date.strftime("%Y-%m-%d")
         daily_spending[day_str] += expense.amount
 
     chart_labels = sorted(daily_spending.keys())
     chart_data = [daily_spending[date] for date in chart_labels]
-    total_spent = sum(expense.amount for expense in pagination.items)
-
+    
+    total_spent = sum(expense.amount for expense in pagination.items) if pagination.items else 0
+  
     budget = current_user.monthly_budget or 0
-    remaining_budget = budget - total_spent
+    remaining_budget = max(0, budget - total_spent)  # Prevent negative
 
     return render_template(
         'home.html',
@@ -122,6 +121,7 @@ def home():
         chart_labels=chart_labels,
         chart_data=chart_data
     )
+
 
 @app.route('/set_budget', methods=['GET', 'POST'])
 @login_required
@@ -199,18 +199,23 @@ def register():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # Allow access to login page even if not authenticated
     if request.method == 'POST':
-        session.pop('_flashes', None)
         username = request.form['username'].strip()
         password = request.form['password']
+        
         user = User.query.filter_by(username=username).first()
         if user and check_password_hash(user.password, password):
             login_user(user)
+            next_page = request.args.get('next')
             flash('Logged in successfully!')
-            return redirect(url_for('home'))
-        flash('Wrong username or password!')
-        return redirect(url_for('login'))
+            return redirect(next_page) if next_page else redirect(url_for('home'))
+        else:
+            flash('Wrong username or password!')
+            return render_template('login.html')
+    
     return render_template('login.html')
+
 
 @app.route('/logout')
 @login_required
