@@ -42,16 +42,19 @@ class Expense(db.Model):
 class VisitedPlace(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
+    review = db.Column(db.String(500)) 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 class FoodTried(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
+    review = db.Column(db.String(500)) 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 class WatchedShow(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
+    review = db.Column(db.String(500)) 
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 @login_manager.user_loader
@@ -229,6 +232,7 @@ def experiences():
 def add_visited_place():
     name = request.form['name']
     new_place = VisitedPlace(name=name, user_id=current_user.id)
+    review = request.form['review'] or ""
     db.session.add(new_place)
     db.session.commit()
     flash('Visited place added!')
@@ -239,6 +243,7 @@ def add_visited_place():
 def add_food_tried():
     name = request.form['name']
     new_food = FoodTried(name=name, user_id=current_user.id)
+    review = request.form['review'] or ""
     db.session.add(new_food)
     db.session.commit()
     flash('Food added!')
@@ -249,21 +254,24 @@ def add_food_tried():
 def add_watched_show():
     name = request.form['name']
     new_show = WatchedShow(name=name, user_id=current_user.id)
+    review = request.form['review'] or ""
     db.session.add(new_show)
     db.session.commit()
     flash('Show added!')
     return redirect(url_for('experiences'))
+    
 @app.route('/delete_visited_place/<int:id>', methods=['POST'])
 @login_required
 def delete_visited_place(id):
     place = VisitedPlace.query.get_or_404(id)
     if place.user_id != current_user.id:
-        flash('Unauthorized action!')
+        flash('Unauthorized!')
         return redirect(url_for('experiences'))
     db.session.delete(place)
     db.session.commit()
-    flash('Visited place deleted!')
+    flash('Place deleted!')
     return redirect(url_for('experiences'))
+
 
 @app.route('/delete_food_tried/<int:id>', methods=['POST'])
 @login_required
