@@ -198,8 +198,9 @@ def register():
         new_user = User(username=username, email=email, password=hashed_pw)
         db.session.add(new_user)
         db.session.commit()
+         login_user(new_user)
         flash('Registration successful! You can now log in.')
-        return redirect(url_for('login'))
+        return redirect(url_for('home'))
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
