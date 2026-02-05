@@ -31,6 +31,8 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=False)
+    monthly_budget = db.Column(db.Float, default=0)  # in rupees
+
 
 class MonthlyBudget(db.Model):
     id = db.Column(db.Integer, primary_key=True)
