@@ -1,27 +1,42 @@
-/* Global body – let Bootstrap handle width, only set font & bg */
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: #f9f9f9;
     color: #333;
 }
 
-/* Headings */
 h1, h2, h3 {
     color: #2c3e50;
 }
 
-/* Links */
-a {
+/* CRITICAL: Fix navbar - remove white boxes */
+.navbar-nav .nav-link {
+    background: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0.5rem 1rem !important;
+    margin: 0 !important;
+    color: rgba(255,255,255,.9) !important;
+    box-shadow: none !important;
+}
+
+.navbar-nav .nav-link:hover {
+    background: rgba(255,255,255,.1) !important;
+    color: white !important;
+}
+
+/* Links (non-navbar) */
+a:not(.nav-link) {
     color: #007bff;
     text-decoration: none;
 }
 
-a:hover {
+a:not(.nav-link):hover {
     color: #0056b3;
     text-decoration: underline;
 }
 
-/* Forms – only style plain forms, not inside Bootstrap cards via extra class */
+/* Only style NON-Bootstrap forms */
 .simple-form {
     background: white;
     padding: 20px;
@@ -30,21 +45,7 @@ a:hover {
     box-shadow: 0 3px 7px rgba(0,0,0,0.1);
 }
 
-/* Inputs – do NOT override Bootstrap .form-control */
-input[type="text"]:not(.form-control),
-input[type="password"]:not(.form-control),
-input[type="number"]:not(.form-control),
-input[type="file"]:not(.form-control) {
-    display: block;
-    width: 100%;
-    margin: 12px 0 20px 0;
-    padding: 10px 12px;
-    border: 1px solid #ccd0d5;
-    border-radius: 5px;
-    font-size: 16px;
-}
-
-/* Buttons – keep for non-Bootstrap buttons */
+/* Buttons (non-Bootstrap) */
 button:not(.btn) {
     background-color: #007bff;
     border: none;
@@ -53,44 +54,9 @@ button:not(.btn) {
     border-radius: 6px;
     font-size: 16px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
 }
 
-button:not(.btn):hover {
-    background-color: #0056b3;
-}
-
-/* Lists – do not touch Bootstrap list-groups */
-ul:not(.list-group) {
-    list-style: none;
-    padding-left: 0;
-}
-
-ul:not(.list-group) li {
-    background: white;
-    padding: 12px 15px;
-    margin-bottom: 10px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.07);
-}
-
-/* Old flash class (no longer used if you use Bootstrap alerts) */
-.flash {
-    background: #f6c23e;
-    color: #856404;
-    padding: 10px 20px;
-    margin-bottom: 20px;
-    border-radius: 5px;
-    font-weight: 600;
-}
-
-/* Old nav styles – avoid styling Bootstrap navbar */
-nav.simple-nav a {
-    margin-right: 15px;
-    font-weight: 600;
-}
-
-/* Inline delete forms */
+/* Inline forms */
 .inline-form {
     display: inline;
 }
