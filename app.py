@@ -32,6 +32,16 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=False)
 
+class MonthlyBudget(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    month = db.Column(db.String(7), nullable=False)  # Format: "2026-02"
+    year = db.Column(db.Integer, nullable=False)
+
+    __table_args__ = (db.UniqueConstraint('user_id', 'month', 'year', name='unique_budget_per_user_month'),)
+
+
 class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String(100))
@@ -85,21 +95,70 @@ def home():
         day_str = expense.date.strftime("%Y-%m-%d")
         daily_spending[day_str] += expense.amount
 
+    
     chart_labels = sorted(daily_spending.keys())
     chart_data = [daily_spending[date] for date in chart_labels]
     total_spent = sum(expense.amount for expense in pagination.items)
     budget = 1000
     remaining_budget = budget - total_spent
 
+       today = datetime.date.today()
+    first_day = datetime.date(today.year, today.month, 1)
+    next_month_first_day = datetime.date(today.year + 1, 1, 1) if today.month == 12 else datetime.date(today.year, today.month + 1, 1)
+    
+    # Get user's budget for current month
+    budget_record = get_monthly_budget(current_user.id, today.year, f"{today.year}-{today.month:02d}")
+    budget = budget_record.amount if budget_record else 0
+    remaining_budget = budget - total_spent
+    
     return render_template(
         'home.html',
         expenses=pagination.items,
         pagination=pagination,
         total_spent=total_spent,
         remaining_budget=remaining_budget,
+        budget=budget,  # Pass budget too
         chart_labels=chart_labels,
         chart_data=chart_data
+
     )
+
+@app.route('/set_budget', methods=['GET', 'POST'])
+@login_required
+def set_budget():
+    if request.method == 'POST':
+        amount = float(request.form['budget'])
+        month = request.form['month']  # "2026-02"
+        year = int(request.form['year'])
+        
+        # Delete existing budget for this month/year
+        existing = MonthlyBudget.query.filter_by(
+            user_id=current_user.id, 
+            month=month, 
+            year=year
+        ).first()
+        if existing:
+            db.session.delete(existing)
+        
+        # Add new budget
+        new_budget = MonthlyBudget(
+            user_id=current_user.id,
+            amount=amount,
+            month=month,
+            year=year
+        )
+        db.session.add(new_budget)
+        db.session.commit()
+        flash('Monthly budget updated!')
+        return redirect(url_for('home'))
+    
+    return render_template('set_budget.html')
+
+def get_monthly_budget(user_id, year, month):
+    """Get user's budget for specific month"""
+    return MonthlyBudget.query.filter_by(
+        user_id=user_id, year=year, month=month
+    ).first()
 
 @app.route('/add_expense', methods=['POST'])
 @login_required
