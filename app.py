@@ -9,18 +9,18 @@ from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer
 
 app = Flask(__name__)
-app.debug = True
+app.config['DEBUG'] = True
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.path.abspath(os.path.dirname(__file__)), 'journal.db')
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///journal.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'your_secret_key'
+app.config['SECRET_KEY'] = 'your_secret_key_change_this_in_production'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 587
 app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USERNAME'] = 'your_email@gmail.com'
 app.config['MAIL_PASSWORD'] = 'your_gmail_app_password'
-mail = Mail(app)
 
+mail = Mail(app)
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -31,18 +31,15 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=False)
-    monthly_budget = db.Column(db.Float, default=0)  # in rupees
-
+    monthly_budget = db.Column(db.Float, default=0)
 
 class MonthlyBudget(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     amount = db.Column(db.Float, nullable=False)
-    month = db.Column(db.String(7), nullable=False)  # Format: "2026-02"
+    month = db.Column(db.String(7), nullable=False)
     year = db.Column(db.Integer, nullable=False)
-
     __table_args__ = (db.UniqueConstraint('user_id', 'month', 'year', name='unique_budget_per_user_month'),)
-
 
 class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -54,31 +51,35 @@ class Expense(db.Model):
 class VisitedPlace(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
-    review = db.Column(db.String(500)) 
+    review = db.Column(db.String(500))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 class FoodTried(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
-    review = db.Column(db.String(500)) 
+    review = db.Column(db.String(500))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 class WatchedShow(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100))
-    review = db.Column(db.String(500)) 
+    review = db.Column(db.String(500))
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# 🔥 CRITICAL FIX: Create ALL tables automatically
+with app.app_context():
+    db.create_all()
+
 @app.route('/')
 @login_required
 def home():
     page = request.args.get('page', 1, type=int)
     per_page = 5
-
+    
     today = datetime.date.today()
     first_day = datetime.date(today.year, today.month, 1)
     next_month_first_day = (
@@ -108,7 +109,9 @@ def home():
     chart_data = [daily_spending[date] for date in chart_labels]
     total_spent = sum(expense.amount for expense in pagination.items)
 
-    # get budget and remaining_budget here, then:
+    budget = current_user.monthly_budget or 0
+    remaining_budget = budget - total_spent
+
     return render_template(
         'home.html',
         expenses=pagination.items,
@@ -120,16 +123,14 @@ def home():
         chart_data=chart_data
     )
 
-
 @app.route('/set_budget', methods=['GET', 'POST'])
 @login_required
 def set_budget():
     if request.method == 'POST':
         amount = float(request.form['budget'])
-        month = request.form['month']  # "2026-02"
+        month = request.form['month']
         year = int(request.form['year'])
         
-        # Delete existing budget for this month/year
         existing = MonthlyBudget.query.filter_by(
             user_id=current_user.id, 
             month=month, 
@@ -138,7 +139,6 @@ def set_budget():
         if existing:
             db.session.delete(existing)
         
-        # Add new budget
         new_budget = MonthlyBudget(
             user_id=current_user.id,
             amount=amount,
@@ -151,12 +151,6 @@ def set_budget():
         return redirect(url_for('home'))
     
     return render_template('set_budget.html')
-
-def get_monthly_budget(user_id, year, month):
-    """Get user's budget for specific month"""
-    return MonthlyBudget.query.filter_by(
-        user_id=user_id, year=year, month=month
-    ).first()
 
 @app.route('/add_expense', methods=['POST'])
 @login_required
@@ -198,12 +192,10 @@ def register():
         new_user = User(username=username, email=email, password=hashed_pw)
         db.session.add(new_user)
         db.session.commit()
-        login_user(new_user)  # ← FIXED: Same indent as db.session.commit()
-        flash('Registration successful! You can now log in.')
+        login_user(new_user)
+        flash('Registration successful!')
         return redirect(url_for('home'))
     return render_template('register.html')
-
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -291,8 +283,8 @@ def experiences():
 @login_required
 def add_visited_place():
     name = request.form['name']
-    new_place = VisitedPlace(name=name, user_id=current_user.id)
-    review = request.form['review'] or ""
+    review = request.form.get('review', "")
+    new_place = VisitedPlace(name=name, review=review, user_id=current_user.id)
     db.session.add(new_place)
     db.session.commit()
     flash('Visited place added!')
@@ -302,8 +294,8 @@ def add_visited_place():
 @login_required
 def add_food_tried():
     name = request.form['name']
-    new_food = FoodTried(name=name, user_id=current_user.id)
-    review = request.form['review'] or ""
+    review = request.form.get('review', "")
+    new_food = FoodTried(name=name, review=review, user_id=current_user.id)
     db.session.add(new_food)
     db.session.commit()
     flash('Food added!')
@@ -313,13 +305,13 @@ def add_food_tried():
 @login_required
 def add_watched_show():
     name = request.form['name']
-    new_show = WatchedShow(name=name, user_id=current_user.id)
-    review = request.form['review'] or ""
+    review = request.form.get('review', "")
+    new_show = WatchedShow(name=name, review=review, user_id=current_user.id)
     db.session.add(new_show)
     db.session.commit()
     flash('Show added!')
     return redirect(url_for('experiences'))
-    
+
 @app.route('/delete_visited_place/<int:id>', methods=['POST'])
 @login_required
 def delete_visited_place(id):
@@ -331,7 +323,6 @@ def delete_visited_place(id):
     db.session.commit()
     flash('Place deleted!')
     return redirect(url_for('experiences'))
-
 
 @app.route('/delete_food_tried/<int:id>', methods=['POST'])
 @login_required
@@ -357,7 +348,6 @@ def delete_watched_show(id):
     flash('Show deleted!')
     return redirect(url_for('experiences'))
 
-
 def generate_reset_token(email, secret_key, expiration=3600):
     s = URLSafeTimedSerializer(secret_key)
     return s.dumps(email, salt='password-reset-salt')
@@ -371,6 +361,4 @@ def verify_reset_token(token, secret_key, expiration=3600):
     return email
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
     app.run(debug=True)
