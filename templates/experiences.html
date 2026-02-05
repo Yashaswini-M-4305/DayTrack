@@ -1,81 +1,162 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>My Journal - Experiences</title>
+    <title>DayTracker - Experiences</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <h1>My Life Experiences</h1>
+    <div class="container mt-5">
+        <h1 class="mb-4">My Life Experiences</h1>
 
-    <h2>Visited Places</h2>
-<form action="{{ url_for('add_visited_place') }}" method="post">
-    <input type="text" name="name" placeholder="Add a place you visited" required>
-    <input type="text" name="review" placeholder="Your review (optional)">
-    <button type="submit">Add Place</button>
-</form>
-<ul>
-    {% for place in places %}
-        <li>
-            <strong>{{ place.name }}</strong>
-            {% if place.review %}
-                <p>{{ place.review }}</p>
+        <!-- Flash Messages - Auto-hide after 3 seconds -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert" id="flash-{{ loop.index }}">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
             {% endif %}
-            <form action="{{ url_for('delete_visited_place', id=place.id) }}" method="post" style="display:inline;">
-                <button type="submit">Delete</button>
-            </form>
-        </li>
-    {% else %}
-        <li>No visited places yet!</li>
-    {% endfor %}
-</ul>
+        {% endwith %}
 
+        <!-- Visited Places -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>Visited Places</h2>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('add_visited_place') }}" method="post" class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <input type="text" name="name" class="form-control" placeholder="Add a place you visited" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="review" class="form-control" placeholder="Your review (optional)">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Add Place</button>
+                    </div>
+                </form>
+                <ul class="list-group">
+                    {% for place in places %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ place.name }}</strong>
+                                {% if place.review %}
+                                    <br><small class="text-muted">{{ place.review }}</small>
+                                {% endif %}
+                            </div>
+                            <form action="{{ url_for('delete_visited_place', id=place.id) }}" method="post" style="display:inline;">
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete {{ place.name }}?')">Delete</button>
+                            </form>
+                        </li>
+                    {% else %}
+                        <li class="list-group-item text-center text-muted">No visited places yet!</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
 
-    <h2>Food Tried</h2>
-    <form action="{{ url_for('add_food_tried') }}" method="post">
-        <input type="text" name="name" placeholder="Add food you tried" required>
-            <input type="text" name="review" placeholder="Your review (optional)">
-        <button type="submit">Add Food</button>
-    </form>
-    <ul>
-        {% for food in foods %}
-           <li>
-            <strong>{{ food.name }}</strong>
-            {% if food.review %}
-                <p>{{ food.review }}</p>
-            {% endif %}
-            <form action="{{ url_for('delete_food_Tried', id=food.id) }}" method="post" style="display:inline;">
-                <button type="submit">Delete</button>
-            </form>
-        </li>
-        {% else %}
-            <li>No food tried yet!</li>
-        {% endfor %}
-    </ul>
+        <!-- Food Tried -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>Food Tried</h2>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('add_food_tried') }}" method="post" class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <input type="text" name="name" class="form-control" placeholder="Add food you tried" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="review" class="form-control" placeholder="Your review (optional)">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Add Food</button>
+                    </div>
+                </form>
+                <ul class="list-group">
+                    {% for food in foods %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ food.name }}</strong>
+                                {% if food.review %}
+                                    <br><small class="text-muted">{{ food.review }}</small>
+                                {% endif %}
+                            </div>
+                            <form action="{{ url_for('delete_food_tried', id=food.id) }}" method="post" style="display:inline;">
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete {{ food.name }}?')">Delete</button>
+                            </form>
+                        </li>
+                    {% else %}
+                        <li class="list-group-item text-center text-muted">No food tried yet!</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
 
-    <h2>Watched Shows</h2>
-    <form action="{{ url_for('add_watched_show') }}" method="post">
-        <input type="text" name="name" placeholder="Add a show you watched" required>
-            <input type="text" name="review" placeholder="Your review (optional)">
-        <button type="submit">Add Show</button>
-    </form>
-    <ul>
-        {% for show in shows %}
-            <li>
-            <strong>{{ show.name }}</strong>
-            {% if show.review %}
-                <p>{{ show.review }}</p>
-            {% endif %}
-            <form action="{{ url_for('delete_watched_show', id=show.id) }}" method="post" style="display:inline;">
-                <button type="submit">Delete</button>
-            </form>
-        </li>
-        {% else %}
-            <li>No watched shows yet!</li>
-        {% endfor %}
-    </ul>
-    <p><a href="{{ url_for('home') }}">Back to Expenses</a></p>
-    <p><a href="{{ url_for('profile') }}">Profile</a></p>
-<link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+        <!-- Watched Shows -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h2>Watched Shows</h2>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('add_watched_show') }}" method="post" class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <input type="text" name="name" class="form-control" placeholder="Add a show you watched" required>
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" name="review" class="form-control" placeholder="Your review (optional)">
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary w-100">Add Show</button>
+                    </div>
+                </form>
+                <ul class="list-group">
+                    {% for show in shows %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ show.name }}</strong>
+                                {% if show.review %}
+                                    <br><small class="text-muted">{{ show.review }}</small>
+                                {% endif %}
+                            </div>
+                            <form action="{{ url_for('delete_watched_show', id=show.id) }}" method="post" style="display:inline;">
+                                <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete {{ show.name }}?')">Delete</button>
+                            </form>
+                        </li>
+                    {% else %}
+                        <li class="list-group-item text-center text-muted">No watched shows yet!</li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
 
+        <!-- Navigation -->
+        <div class="row">
+            <div class="col-md-6">
+                <a href="{{ url_for('home') }}" class="btn btn-secondary">← Back to Expenses</a>
+            </div>
+            <div class="col-md-6 text-end">
+                <a href="{{ url_for('profile') }}" class="btn btn-outline-primary">Profile</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS + Auto-hide Flash Messages (3 seconds) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Auto-hide flash messages after 3 seconds
+            const flashAlerts = document.querySelectorAll('[id^="flash-"]');
+            flashAlerts.forEach(function(alert) {
+                setTimeout(function() {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }, 3000); // 3 seconds
+            });
+        });
+    </script>
 </body>
 </html>
