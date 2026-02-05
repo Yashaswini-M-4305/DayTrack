@@ -76,9 +76,15 @@ def load_user(user_id):
 def home():
     page = request.args.get('page', 1, type=int)
     per_page = 5
+
     today = datetime.date.today()
     first_day = datetime.date(today.year, today.month, 1)
-    next_month_first_day = datetime.date(today.year + 1, 1, 1) if today.month == 12 else datetime.date(today.year, today.month + 1, 1)
+    next_month_first_day = (
+        datetime.date(today.year + 1, 1, 1)
+        if today.month == 12
+        else datetime.date(today.year, today.month + 1, 1)
+    )
+
     pagination = Expense.query.filter(
         Expense.user_id == current_user.id,
         Expense.date >= first_day,
@@ -91,37 +97,27 @@ def home():
         Expense.date >= first_day,
         Expense.date < next_month_first_day
     ).all()
+
     for expense in expenses_for_chart:
         day_str = expense.date.strftime("%Y-%m-%d")
         daily_spending[day_str] += expense.amount
 
-    
     chart_labels = sorted(daily_spending.keys())
     chart_data = [daily_spending[date] for date in chart_labels]
     total_spent = sum(expense.amount for expense in pagination.items)
-    budget = 1000
-    remaining_budget = budget - total_spent
 
-       today = datetime.date.today()
-    first_day = datetime.date(today.year, today.month, 1)
-    next_month_first_day = datetime.date(today.year + 1, 1, 1) if today.month == 12 else datetime.date(today.year, today.month + 1, 1)
-    
-    # Get user's budget for current month
-    budget_record = get_monthly_budget(current_user.id, today.year, f"{today.year}-{today.month:02d}")
-    budget = budget_record.amount if budget_record else 0
-    remaining_budget = budget - total_spent
-    
+    # get budget and remaining_budget here, then:
     return render_template(
         'home.html',
         expenses=pagination.items,
         pagination=pagination,
         total_spent=total_spent,
         remaining_budget=remaining_budget,
-        budget=budget,  # Pass budget too
+        budget=budget,
         chart_labels=chart_labels,
         chart_data=chart_data
-
     )
+
 
 @app.route('/set_budget', methods=['GET', 'POST'])
 @login_required
