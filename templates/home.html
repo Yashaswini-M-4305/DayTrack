@@ -3,101 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home - Expense Journal</title>
+    <title>DayTracker - Expenses</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    
 </head>
 <body>
-    <h1>My Expenses</h1>
+<div class="container mt-5">
 
+    <h1 class="mb-4">My Expenses</h1>
+
+    <!-- Flash Messages - Auto-hide after 3 seconds -->
     {% with messages = get_flashed_messages() %}
       {% if messages %}
-        <div class="flash">
-          {% for msg in messages %}
-            <p>{{ msg }}</p>
-          {% endfor %}
-        </div>
+        {% for msg in messages %}
+          <div class="alert alert-warning alert-dismissible fade show" role="alert" id="flash-{{ loop.index }}">
+            {{ msg }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
       {% endif %}
     {% endwith %}
 
-    <form action="{{ url_for('add_expense') }}" method="post">
-        <input type="text" name="description" placeholder="Expense Description" required>
-        <input type="number" step="0.01" min="0" name="amount" placeholder="Amount" required>
-        <input type="date" name="date" required>
-        <button type="submit">Add Expense</button>
-    </form>
-
-    {% if expenses %}
-      <ul>
-        {% for expense in expenses %}
-          <li>
-            {{ expense.date.strftime('%Y-%m-%d') }} -
-            {{ expense.description }}: ${{ '%.2f'|format(expense.amount) }}
-            <form class="inline-form" action="{{ url_for('delete_expense', id=expense.id) }}" method="post">
-                <button type="submit" onclick="return confirm('Delete this expense?')">Delete</button>
+    <!-- Add Expense Form -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Add New Expense</h2>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('add_expense') }}" method="post" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" name="description" class="form-control" placeholder="Expense Description" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" step="0.01" min="0" name="amount" class="form-control" placeholder="Amount" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="date" name="date" class="form-control" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">Add Expense</button>
+                </div>
             </form>
-          </li>
-        {% endfor %}
-      </ul>
-    {% else %}
-      <p>No expenses recorded this month.</p>
-    {% endif %}
-
-    <div>
-        {% if pagination.has_prev %}
-            <a href="{{ url_for('home', page=pagination.prev_num) }}">Previous</a>
-        {% endif %}
-        <span>Page {{ pagination.page }} of {{ pagination.pages }}</span>
-        {% if pagination.has_next %}
-            <a href="{{ url_for('home', page=pagination.next_num) }}">Next</a>
-        {% endif %}
+        </div>
     </div>
 
-    <p>Total spent this month: ${{ '%.2f'|format(total_spent) }}</p>
-    <p>Remaining budget: ${{ '%.2f'|format(remaining_budget) }}</p>
+    <!-- Expenses List -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">This Month's Expenses</h2>
+        </div>
+        <div class="card-body">
+            {% if expenses %}
+              <ul class="list-group">
+                {% for expense in expenses %}
+                  <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                      <strong>{{ expense.date.strftime('%Y-%m-%d') }}</strong> –
+                      {{ expense.description }}:
+                      ${{ '%.2f'|format(expense.amount) }}
+                    </div>
+                    <form class="m-0" action="{{ url_for('delete_expense', id=expense.id) }}" method="post">
+                        <button type="submit" class="btn btn-danger btn-sm"
+                                onclick="return confirm('Delete this expense?')">
+                            Delete
+                        </button>
+                    </form>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-muted mb-0">No expenses recorded this month.</p>
+            {% endif %}
+        </div>
+        <div class="card-footer d-flex justify-content-between align-items-center">
+            <div>
+                {% if pagination.has_prev %}
+                    <a href="{{ url_for('home', page=pagination.prev_num) }}" class="btn btn-sm btn-outline-secondary">Previous</a>
+                {% endif %}
+                {% if pagination.has_next %}
+                    <a href="{{ url_for('home', page=pagination.next_num) }}" class="btn btn-sm btn-outline-secondary ms-2">Next</a>
+                {% endif %}
+            </div>
+            <span class="text-muted">
+                Page {{ pagination.page }} of {{ pagination.pages }}
+            </span>
+        </div>
+    </div>
 
-    <h2>Spending trends this month</h2>
-    <canvas id="spendingChart" width="600" height="300"></canvas>
+    <!-- Summary -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="alert alert-info mb-0">
+                <strong>Total spent this month:</strong>
+                ${{ '%.2f'|format(total_spent) }}
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="alert alert-success mb-0 text-md-end">
+                <strong>Remaining budget:</strong>
+                ${{ '%.2f'|format(remaining_budget) }}
+            </div>
+        </div>
+    </div>
 
-    <p><a href="{{ url_for('experiences') }}">My Experiences</a> | <a href="{{ url_for('profile') }}">Profile</a> | <a href="{{ url_for('logout') }}">Log out</a></p>
+    <!-- Chart -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h2 class="h5 mb-0">Spending Trends This Month</h2>
+        </div>
+        <div class="card-body">
+            <canvas id="spendingChart" height="120"></canvas>
+        </div>
+    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-      const ctx = document.getElementById('spendingChart').getContext('2d');
-      // Flask will render these with valid JS arrays
-      const chartLabels = {{ chart_labels | tojson | safe }};
-      const chartData = {{ chart_data | tojson | safe }};
-      new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: chartLabels,
-          datasets: [{
-            label: 'Daily Spending',
-            backgroundColor: 'rgba(54, 162, 235, 0.4)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            fill: true,
-            data: chartData,
-            tension: 0.1
-          }]
-        },
-        options: {
-          scales: {
-            x: {
-              title: {
-                display: true,
-                text: 'Date'
-              }
-            },
-            y: {
-              title: {
-                display: true,
-                text: 'Amount ($)'
-              },
-              beginAtZero: true
-            }
+    <!-- Navigation -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <a href="{{ url_for('experiences') }}" class="btn btn-secondary">My Experiences</a>
+            <a href="{{ url_for('profile') }}" class="btn btn-outline-primary ms-2">Profile</a>
+        </div>
+        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+            <a href="{{ url_for('logout') }}" class="btn btn-danger">Log out</a>
+        </div>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Auto-hide flash messages -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const flashAlerts = document.querySelectorAll('[id^="flash-"]');
+        flashAlerts.forEach(function(alert) {
+            setTimeout(function() {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            }, 3000);  // 3 seconds
+        });
+    });
+</script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const ctx = document.getElementById('spendingChart').getContext('2d');
+  const chartLabels = {{ chart_labels | tojson | safe }};
+  const chartData = {{ chart_data | tojson | safe }};
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartLabels,
+      datasets: [{
+        label: 'Daily Spending',
+        backgroundColor: 'rgba(54, 162, 235, 0.4)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        fill: true,
+        data: chartData,
+        tension: 0.1
+      }]
+    },
+    options: {
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Date'
           }
+        },
+        y: {
+          title: {
+            display: true,
+            text: 'Amount ($)'
+          },
+          beginAtZero: true
         }
-      });
-    </script>
+      }
+    }
+  });
+</script>
 </body>
 </html>
