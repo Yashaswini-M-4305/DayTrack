@@ -1,16 +1,16 @@
+/* Global body – let Bootstrap handle width, only set font & bg */
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    max-width: 900px;
-    margin: 30px auto;
     background: #f9f9f9;
     color: #333;
-    padding: 0 15px;
 }
 
+/* Headings */
 h1, h2, h3 {
     color: #2c3e50;
 }
 
+/* Links */
 a {
     color: #007bff;
     text-decoration: none;
@@ -21,7 +21,8 @@ a:hover {
     text-decoration: underline;
 }
 
-form {
+/* Forms – only style plain forms, not inside Bootstrap cards via extra class */
+.simple-form {
     background: white;
     padding: 20px;
     margin-bottom: 25px;
@@ -29,10 +30,11 @@ form {
     box-shadow: 0 3px 7px rgba(0,0,0,0.1);
 }
 
-input[type="text"],
-input[type="password"],
-input[type="number"],
-input[type="file"] {
+/* Inputs – do NOT override Bootstrap .form-control */
+input[type="text"]:not(.form-control),
+input[type="password"]:not(.form-control),
+input[type="number"]:not(.form-control),
+input[type="file"]:not(.form-control) {
     display: block;
     width: 100%;
     margin: 12px 0 20px 0;
@@ -42,7 +44,8 @@ input[type="file"] {
     font-size: 16px;
 }
 
-button {
+/* Buttons – keep for non-Bootstrap buttons */
+button:not(.btn) {
     background-color: #007bff;
     border: none;
     color: white;
@@ -53,16 +56,17 @@ button {
     transition: background-color 0.3s ease;
 }
 
-button:hover {
+button:not(.btn):hover {
     background-color: #0056b3;
 }
 
-ul {
+/* Lists – do not touch Bootstrap list-groups */
+ul:not(.list-group) {
     list-style: none;
     padding-left: 0;
 }
 
-ul li {
+ul:not(.list-group) li {
     background: white;
     padding: 12px 15px;
     margin-bottom: 10px;
@@ -70,6 +74,7 @@ ul li {
     box-shadow: 0 2px 5px rgba(0,0,0,0.07);
 }
 
+/* Old flash class (no longer used if you use Bootstrap alerts) */
 .flash {
     background: #f6c23e;
     color: #856404;
@@ -79,14 +84,13 @@ ul li {
     font-weight: 600;
 }
 
-nav {
-    margin-bottom: 20px;
-}
-
-nav a {
+/* Old nav styles – avoid styling Bootstrap navbar */
+nav.simple-nav a {
     margin-right: 15px;
     font-weight: 600;
 }
+
+/* Inline delete forms */
 .inline-form {
     display: inline;
 }
