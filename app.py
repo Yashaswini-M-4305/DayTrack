@@ -298,10 +298,18 @@ def reset_password(token):
 @app.route('/profile')
 @login_required
 def profile():
+    # 🔥 FIX: Import these models here OR at top of file
     places = VisitedPlace.query.filter_by(user_id=current_user.id).all()
     foods = FoodTried.query.filter_by(user_id=current_user.id).all()
     shows = WatchedShow.query.filter_by(user_id=current_user.id).all()
-    return render_template('profile.html', user=current_user, places=places, foods=foods, shows=shows)
+    expenses_count = Expense.query.filter_by(user_id=current_user.id).count()
+    
+    return render_template('profile.html', 
+                         user=current_user, 
+                         places=places, 
+                         foods=foods, 
+                         shows=shows,
+                         expenses_count=expenses_count)
 
 
 @app.route('/experiences')
