@@ -158,35 +158,43 @@ def set_budget():
     
     if request.method == 'POST':
         try:
-            amount = float(request.form['budget'])
+            amount_str = request.form.get('budget', '0').strip()
+            amount = float(amount_str)
             
-            # Delete existing budget for current month
+            if amount < 0:
+                flash('Budget cannot be negative', 'danger')
+                return render_template('set_budget.html', now=now)
+            
+            # Delete existing for current month
             existing = MonthlyBudget.query.filter_by(
                 user_id=current_user.id, 
-                month=current_month[-2:],  # "01", "02"
-                year=int(current_month[:4])  # "2026"
+                month=current_month[-2:],
+                year=int(current_month[:4])
             ).first()
             if existing:
                 db.session.delete(existing)
             
-            # Create new budget for current month
+            # Create new
             new_budget = MonthlyBudget(
                 user_id=current_user.id,
                 amount=amount,
-                month=current_month[-2:],  # "01", "02", etc.
-                year=int(current_month[:4])  # 2026
+                month=current_month[-2:],
+                year=int(current_month[:4])
             )
             db.session.add(new_budget)
-            db.session.commit()
             
-            # Update user monthly_budget field for quick display
+            # Update user field for quick display
             current_user.monthly_budget = amount
-            db.session.commit()
             
-            flash('✅ Monthly budget updated successfully!', 'success')
-        except Exception as e:
+            db.session.commit()
+            flash('✅ Monthly budget updated!', 'success')
+            return redirect(url_for('home'))
+            
+        except ValueError:
+            flash('❌ Invalid budget amount', 'danger')
+        except Exception:
+            db.session.rollback()
             flash('❌ Error setting budget. Try again.', 'danger')
-        return redirect(url_for('home'))
     
     return render_template('set_budget.html', now=now)
 
@@ -194,16 +202,46 @@ def set_budget():
 @login_required
 def add_expense():
     try:
-        description = request.form['description']
-        amount = float(request.form['amount'])
-        date_str = request.form['date']
+        description = request.form.get('description', '').strip()
+        amount_str = request.form.get('amount', '0').strip()
+        date_str = request.form.get('date', '').strip()
+        
+        # Validate inputs
+        if not description:
+            flash('Description is required', 'danger')
+            return redirect(url_for('home'))
+        
+        amount = float(amount_str)
+        if amount <= 0:
+            flash('Amount must be greater than 0', 'danger')
+            return redirect(url_for('home'))
+        
+        if not date_str:
+            flash('Date is required', 'danger')
+            return redirect(url_for('home'))
+        
+        # Parse date safely
         date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
-        new_expense = Expense(description=description, amount=amount, date=date, user_id=current_user.id)
+        
+        # Create expense
+        new_expense = Expense(
+            description=description,
+            amount=amount,
+            date=date,
+            user_id=current_user.id
+        )
+        
         db.session.add(new_expense)
         db.session.commit()
-        flash('Expense added successfully!')
-    except Exception:
-        flash('Error adding expense. Check date format.')
+        
+        flash('✅ Expense added successfully!', 'success')
+        
+    except ValueError as e:
+        flash('❌ Invalid amount or date format', 'danger')
+    except Exception as e:
+        db.session.rollback()
+        flash('❌ Error adding expense. Please try again.', 'danger')
+    
     return redirect(url_for('home'))
 
 @app.route('/delete_expense/<int:id>', methods=['POST'])
