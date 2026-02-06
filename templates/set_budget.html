@@ -6,23 +6,28 @@
             <h2>Set Monthly Budget</h2>
         </div>
         <div class="card-body">
-            <form method="post" class="row g-3">
-                <div class="col-md-4">
-                    <label>Monthly Budget ($)</label>
-                    <input type="number" name="budget" class="form-control" step="0.01" min="0" required>
-                </div>
-                <div class="col-md-3">
-                    <label>Month</label>
-                    <input type="month" name="month" class="form-control" required>
-                </div>
-                <div class="col-md-3">
-                    <label>Year</label>
-                    <input type="number" name="year" class="form-control" min="2020" max="2030" value="{{ now.year }}" required>
-                </div>
-                <div class="col-md-2 d-grid">
-                    <button type="submit" class="btn btn-primary mt-4 h-100">Set Budget</button>
-                </div>
-            </form>
+           <form method="POST">
+    <div class="row">
+        <div class="col-md-4">
+            <label>Month:</label>
+            <select name="month" class="form-control" required>
+                <option value="01">January</option>
+                <option value="02">February</option>
+                <!-- ... all 12 months ... -->
+                <option value="12">December</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label>Year:</label>
+            <input type="number" name="year" value="2026" min="2020" max="2030" class="form-control" required>
+        </div>
+        <div class="col-md-4">
+            <label>Budget (₹):</label>
+            <input type="number" name="budget" step="0.01" class="form-control" required>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">Update Budget</button>
+</form>
             <a href="{{ url_for('home') }}" class="btn btn-secondary mt-3">← Back to Home</a>
         </div>
     </div>
