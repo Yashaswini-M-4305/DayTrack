@@ -146,40 +146,49 @@ def home():
         remaining_budget=remaining_budget,
         budget=budget,
         chart_labels=chart_labels,
-        chart_data=chart_data
+        chart_data=chart_data,
+        now=today  # For ₹ display
     )
 
 @app.route('/set_budget', methods=['GET', 'POST'])
 @login_required
 def set_budget():
+    now = datetime.date.today()
+    current_month = f"{now.year}-{now.month:02d}"
+    
     if request.method == 'POST':
         try:
             amount = float(request.form['budget'])
-            month = request.form['month']
-            year = int(request.form['year'])
             
+            # Delete existing budget for current month
             existing = MonthlyBudget.query.filter_by(
                 user_id=current_user.id, 
-                month=month, 
-                year=year
+                month=current_month[-2:],  # "01", "02"
+                year=int(current_month[:4])  # "2026"
             ).first()
             if existing:
                 db.session.delete(existing)
             
+            # Create new budget for current month
             new_budget = MonthlyBudget(
                 user_id=current_user.id,
                 amount=amount,
-                month=month,
-                year=year
+                month=current_month[-2:],  # "01", "02", etc.
+                year=int(current_month[:4])  # 2026
             )
             db.session.add(new_budget)
             db.session.commit()
-            flash('Monthly budget updated!')
-        except Exception:
-            flash('Error setting budget. Try again.')
+            
+            # Update user monthly_budget field for quick display
+            current_user.monthly_budget = amount
+            db.session.commit()
+            
+            flash('✅ Monthly budget updated successfully!', 'success')
+        except Exception as e:
+            flash('❌ Error setting budget. Try again.', 'danger')
         return redirect(url_for('home'))
     
-    return render_template('set_budget.html')
+    return render_template('set_budget.html', now=now)
 
 @app.route('/add_expense', methods=['POST'])
 @login_required
