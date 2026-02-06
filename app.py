@@ -73,17 +73,13 @@ def load_user(user_id):
 
 # 🔥 ULTIMATE RENDER FIX: Delete ALL old DB files + create FRESH database
 with app.app_context():
-    # Delete ALL possible old database files
     for db_file in ['journal.db', 'journal_fresh.db']:
         if os.path.exists(db_file):
             os.remove(db_file)
             print(f"🗑️ DELETED: {db_file}")
-    
-    # Create PERFECTLY FRESH database with ALL columns
     db.create_all()
     print("✅ FRESH DATABASE CREATED - ALL COLUMNS EXIST!")
 
-# ✅ PUBLIC LANDING PAGE (NO login_required)
 @app.route('/')
 def index():
     if current_user.is_authenticated:
@@ -159,7 +155,7 @@ def set_budget():
     if request.method == 'POST':
         try:
             amount = float(request.form['budget'])
-            month = request.form['month']  # "01", "02", etc.
+            month = request.form['month']
             year = int(request.form['year'])
             
             existing = MonthlyBudget.query.filter_by(
@@ -200,7 +196,6 @@ def add_expense():
     except Exception:
         flash('Error adding expense. Check date format.')
     return redirect(url_for('home'))
-
 
 @app.route('/delete_expense/<int:id>', methods=['POST'])
 @login_required
@@ -307,17 +302,107 @@ def experiences():
 @app.route('/add_visited_place', methods=['POST'])
 @login_required
 def add_visited_place():
-    name = request.form['name']
-    review = request.form.get('review', "")
-    new_place = VisitedPlace(name=name, review=review, user_id=current_user.id)
-    db.session.add(new_place)
-    db.session.commit()
-    flash('Visited place added!')
+    try:
+        name = request.form['name']
+        review = request.form.get('review', "")
+        new_place = VisitedPlace(name=name, review=review, user_id=current_user.id)
+        db.session.add(new_place)
+        db.session.commit()
+        flash('Visited place added!')
+    except Exception:
+        flash('Error adding place.')
     return redirect(url_for('experiences'))
 
 @app.route('/add_food_tried', methods=['POST'])
 @login_required
 def add_food_tried():
-    name = request.form['name']
-    review = request.form.get('review', "")
-    new_food = FoodTried(name=name,
+    try:
+        name = request.form['name']
+        review = request.form.get('review', "")
+        new_food = FoodTried(name=name, review=review, user_id=current_user.id)
+        db.session.add(new_food)
+        db.session.commit()
+        flash('Food added!')
+    except Exception:
+        flash('Error adding food.')
+    return redirect(url_for('experiences'))
+
+@app.route('/add_watched_show', methods=['POST'])
+@login_required
+def add_watched_show():
+    try:
+        name = request.form['name']
+        review = request.form.get('review', "")
+        new_show = WatchedShow(name=name, review=review, user_id=current_user.id)
+        db.session.add(new_show)
+        db.session.commit()
+        flash('Show added!')
+    except Exception:
+        flash('Error adding show.')
+    return redirect(url_for('experiences'))
+
+@app.route('/delete_visited_place/<int:id>', methods=['POST'])
+@login_required
+def delete_visited_place(id):
+    place = VisitedPlace.query.get_or_404(id)
+    if place.user_id != current_user.id:
+        flash('Unauthorized!')
+        return redirect(url_for('experiences'))
+    db.session.delete(place)
+    db.session.commit()
+    flash('Place deleted!')
+    return redirect(url_for('experiences'))
+
+@app.route('/delete_food_tried/<int:id>', methods=['POST'])
+@login_required
+def delete_food_tried(id):
+    food = FoodTried.query.get_or_404(id)
+    if food.user_id != current_user.id:
+        flash('Unauthorized!')
+        return redirect(url_for('experiences'))
+    db.session.delete(food)
+    db.session.commit()
+    flash('Food deleted!')
+    return redirect(url_for('experiences'))
+
+@app.route('/delete_watched_show/<int:id>', methods=['POST'])
+@login_required
+def delete_watched_show(id):
+    show = WatchedShow.query.get_or_404(id)
+    if show.user_id != current_user.id:
+        flash('Unauthorized!')
+        return redirect(url_for('experiences'))
+    db.session.delete(show)
+    db.session.commit()
+    flash('Show deleted!')
+    return redirect(url_for('experiences'))
+
+@app.route('/change_password', methods=['GET', 'POST'])
+@login_required
+def change_password():
+    if request.method == 'POST':
+        old_password = request.form['old_password']
+        new_password = request.form['new_password']
+        if not check_password_hash(current_user.password, old_password):
+            flash('Old password is incorrect.')
+            return redirect(url_for('change_password'))
+        current_user.password = generate_password_hash(new_password)
+        db.session.commit()
+        flash('Password changed successfully!')
+        return redirect(url_for('profile'))
+    return render_template('change_password.html')
+
+def generate_reset_token(email, secret_key, expiration=3600):
+    s = URLSafeTimedSerializer(secret_key)
+    return s.dumps(email, salt='password-reset-salt')
+
+def verify_reset_token(token, secret_key, expiration=3600):
+    s = URLSafeTimedSerializer(secret_key)
+    try:
+        email = s.loads(token, salt='password-reset-salt', max_age=expiration)
+    except Exception:
+        return None
+    return email
+
+if __name__ == '__main__':
+    app.run(debug=True)
