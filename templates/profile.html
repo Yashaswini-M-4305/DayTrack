@@ -1,2 +1,188 @@
-<h1>Profile works</h1>
-<p>{{ user.username }}</p>
+{% extends "base.html" %}
+{% block title %}Profile - DayTracker{% endblock %}
+
+{% block content %}
+<!-- Custom compact navbar -->
+<nav class="navbar navbar-expand navbar-light bg-light border-bottom shadow-sm mb-4">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold fs-5 text-primary" href="{{ url_for('home') }}">
+            <i class="bi bi-arrow-left me-2"></i>Back to Home
+        </a>
+        <div class="navbar-nav ms-auto gap-2">
+            <a href="{{ url_for('home') }}" class="btn btn-outline-secondary btn-sm px-3">Home</a>
+            <a href="{{ url_for('experiences') }}" class="btn btn-outline-info btn-sm px-3">Experiences</a>
+            <a href="{{ url_for('set_budget') }}" class="btn btn-outline-success btn-sm px-3">Budget</a>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm px-3">Logout</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <!-- Profile Header -->
+    <div class="row mb-5">
+        <div class="col-md-8 mx-auto">
+            <div class="card shadow-lg border-0 overflow-hidden">
+                <div class="bg-gradient-primary text-white p-5 position-relative">
+                    <div class="position-absolute top-0 end-0 p-3">
+                        <span class="badge bg-light text-primary fs-6 px-3 py-2">Verified</span>
+                    </div>
+                    <div class="row align-items-end">
+                        <div class="col-md-3 text-center">
+                            <div class="avatar-container position-relative d-inline-block">
+                                <i class="bi bi-person-circle display-1 text-white opacity-75"></i>
+                                <div class="avatar-ring"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-9">
+                            <h1 class="display-5 fw-bold mb-1">{{ user.username }}</h1>
+                            <p class="lead mb-2">{{ user.email }}</p>
+                            <div class="row g-3 mb-3">
+                                <div class="col-auto">
+                                    <a href="{{ url_for('change_password') }}" class="btn btn-light btn-lg px-4">
+                                        <i class="bi bi-key me-2"></i>Change Password
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Stats Cards -->
+        <div class="col-lg-3 col-md-6">
+            <div class="card h-100 shadow-sm border-0 hover-lift">
+                <div class="card-body text-center p-4">
+                    <i class="bi bi-receipt display-4 text-primary mb-3"></i>
+                    <h3 class="fw-bold text-primary">{{ Expense.query.filter_by(user_id=user.id).count() }}</h3>
+                    <p class="text-muted mb-0 fs-5">Total Expenses</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card h-100 shadow-sm border-0 hover-lift">
+                <div class="card-body text-center p-4">
+                    <i class="bi bi-geo-alt display-4 text-success mb-3"></i>
+                    <h3 class="fw-bold text-success">{{ places|length }}</h3>
+                    <p class="text-muted mb-0 fs-5">Places Visited</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card h-100 shadow-sm border-0 hover-lift">
+                <div class="card-body text-center p-4">
+                    <i class="bi bi-utensils display-4 text-warning mb-3"></i>
+                    <h3 class="fw-bold text-warning">{{ foods|length }}</h3>
+                    <p class="text-muted mb-0 fs-5">Foods Tried</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="card h-100 shadow-sm border-0 hover-lift">
+                <div class="card-body text-center p-4">
+                    <i class="bi bi-tv display-4 text-info mb-3"></i>
+                    <h3 class="fw-bold text-info">{{ shows|length }}</h3>
+                    <p class="text-muted mb-0 fs-5">Shows Watched</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="col-12">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0"><i class="bi bi-clock-history me-2 text-primary"></i>Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        {% set recent_expenses = Expense.query.filter_by(user_id=user.id).order_by(Expense.date.desc()).limit(5).all() %}
+                        {% for expense in recent_expenses %}
+                        <div class="list-group-item px-0 py-3 border-bottom">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <div class="fw-bold">{{ expense.description }}</div>
+                                    <small class="text-muted">{{ expense.date.strftime('%d %b %Y') }}</small>
+                                </div>
+                                <div class="col-md-3 text-primary fw-bold fs-5">
+                                    ₹{{ "%.2f"|format(expense.amount) }}
+                                </div>
+                                <div class="col-md-3 text-end">
+                                    <span class="badge bg-success">Expense</span>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% if not recent_expenses %}
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-inbox display-4 mb-3 opacity-50"></i>
+                            <h5>No recent activity</h5>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mt-5">
+        <div class="col-md-4">
+            <a href="{{ url_for('home') }}" class="card h-100 shadow-sm border-0 text-decoration-none hover-lift">
+                <div class="card-body text-center p-5 bg-light rounded-3">
+                    <i class="bi bi-house-door display-3 text-primary mb-3"></i>
+                    <h5 class="fw-bold text-primary">Track Expenses</h5>
+                    <p class="text-muted mb-0">Add expenses & view budget</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{{ url_for('experiences') }}" class="card h-100 shadow-sm border-0 text-decoration-none hover-lift">
+                <div class="card-body text-center p-5 bg-light rounded-3">
+                    <i class="bi bi-journal-text display-3 text-success mb-3"></i>
+                    <h5 class="fw-bold text-success">Life Experiences</h5>
+                    <p class="text-muted mb-0">Track places, food, shows</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a href="{{ url_for('set_budget') }}" class="card h-100 shadow-sm border-0 text-decoration-none hover-lift">
+                <div class="card-body text-center p-5 bg-light rounded-3">
+                    <i class="bi bi-wallet2 display-3 text-warning mb-3"></i>
+                    <h5 class="fw-bold text-warning">Set Budget</h5>
+                    <p class="text-muted mb-0">Monthly spending limit</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+.avatar-container {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto;
+}
+.avatar-ring {
+    position: absolute;
+    top: -8px;
+    left: -8px;
+    width: 136px;
+    height: 136px;
+    border: 4px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    z-index: -1;
+}
+.hover-lift {
+    transition: all 0.3s ease;
+}
+.hover-lift:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
+}
+</style>
+{% endblock %}
