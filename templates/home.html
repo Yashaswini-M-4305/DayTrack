@@ -1,190 +1,198 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DayTracker - Expenses</title>
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
-<div class="container mt-5">
+{% extends "base.html" %}
+{% block title %}Expenses - DayTracker{% endblock %}
+{% set show_navbar = False %}
 
-    <h1 class="mb-4">My Expenses</h1>
+{% block content %}
+<!-- 🔥 CUSTOM COMPACT NAVBAR (exactly like your screenshot) -->
+<nav class="navbar navbar-expand navbar-light bg-light border-bottom shadow-sm mb-4">
+    <div class="container-fluid">
+        <div class="navbar-brand fw-bold fs-5 text-primary">
+            <i class="bi bi-calendar3 me-2"></i>DayTracker
+        </div>
+        <div class="navbar-nav ms-auto gap-2">
+            <a href="{{ url_for('set_budget') }}" class="btn btn-outline-secondary btn-sm px-3">
+                <i class="bi bi-wallet2 me-1"></i>Set Budget
+            </a>
+            <a href="{{ url_for('profile') }}" class="btn btn-outline-primary btn-sm px-3">
+                <i class="bi bi-person me-1"></i>Profile
+            </a>
+            <a href="{{ url_for('experiences') }}" class="btn btn-outline-info btn-sm px-3">
+                <i class="bi bi-journal-text me-1"></i>Experiences
+            </a>
+            <a href="{{ url_for('logout') }}" class="btn btn-outline-danger btn-sm px-3">
+                <i class="bi bi-box-arrow-right me-1"></i>Logout
+            </a>
+        </div>
+    </div>
+</nav>
 
-    <!-- Flash Messages - Auto-hide after 3 seconds -->
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        {% for msg in messages %}
-          <div class="alert alert-warning alert-dismissible fade show" role="alert" id="flash-{{ loop.index }}">
-            {{ msg }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-        {% endfor %}
-      {% endif %}
+<div class="container-fluid">
+    <!-- Flash Messages (uses base.html styling) -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'success' if category == 'message' else category }} 
+                       alert-dismissible fade show mb-4" role="alert" id="flash-{{ loop.index }}">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
     {% endwith %}
 
-    <!-- Set Monthly Budget Form -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h2 class="h5 mb-0">Set Monthly Budget</h2>
+    <!-- 🔥 SIMPLIFIED Budget Form (NO year/month fields) -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h3 class="h5 mb-0"><i class="bi bi-wallet2 me-2"></i>Set Monthly Budget</h3>
         </div>
         <div class="card-body">
-            <form action="{{ url_for('set_budget') }}" method="post" class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Monthly Budget (₹)</label>
-                    <input type="number" name="budget" class="form-control" step="0.01" min="0" 
-                           value="{{ budget }}" placeholder="1000" required>
+            <form action="{{ url_for('set_budget') }}" method="POST" class="row g-3 align-items-end">
+                <div class="col-md-8">
+                    <label class="form-label fw-semibold fs-5">Monthly Budget</label>
+                    <div class="input-group">
+                        <span class="input-group-text">₹</span>
+                        <input type="number" name="budget" class="form-control form-control-lg" 
+                               step="0.01" min="0" value="{{ budget }}" placeholder="Enter amount" required>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Month</label>
-                    <input type="month" name="month" class="form-control" required>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Year</label>
-                    <input type="number" name="year" class="form-control" min="2020" max="2030" required>
-                </div>
-                <div class="col-md-3 d-grid">
-                    <button type="submit" class="btn btn-outline-primary h-100 mt-4">Update Budget</button>
+                <div class="col-md-4">
+                    <button type="submit" class="btn btn-success w-100 py-3 fs-5">
+                        <i class="bi bi-check-circle me-2"></i>Update Budget
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- Add Expense Form -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h2 class="h5 mb-0">Add New Expense</h2>
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-success text-white">
+            <h3 class="h5 mb-0"><i class="bi bi-plus-circle me-2"></i>Add New Expense</h3>
         </div>
         <div class="card-body">
-            <form action="{{ url_for('add_expense') }}" method="post" class="row g-3">
-                <div class="col-md-4">
-                    <input type="text" name="description" class="form-control" placeholder="Expense Description" required>
+            <form action="{{ url_for('add_expense') }}" method="POST" class="row g-3">
+                <div class="col-md-5">
+                    <input type="text" name="description" class="form-control form-control-lg" 
+                           placeholder="Expense description (Groceries, Transport, etc.)" required>
                 </div>
                 <div class="col-md-3">
-                    <input type="number" step="0.01" min="0" name="amount" class="form-control" placeholder="Amount" required>
-                </div>
-                <div class="col-md-3">
-                    <input type="date" name="date" class="form-control" required>
+                    <div class="input-group">
+                        <span class="input-group-text">₹</span>
+                        <input type="number" name="amount" class="form-control form-control-lg" 
+                               step="0.01" min="0" placeholder="0.00" required>
+                    </div>
                 </div>
                 <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">Add Expense</button>
+                    <input type="date" name="date" class="form-control form-control-lg" 
+                           value="{{ now.strftime('%Y-%m-%d') }}" required>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100 py-3 fs-5">Add Expense</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Budget Summary -->
-    <div class="row mb-4">
+    <!-- Budget Summary Cards -->
+    <div class="row g-4 mb-5">
         <div class="col-md-4">
-            <div class="alert alert-info">
-                <h5>Monthly Budget</h5>
-                ${{ '%.2f'|format(budget) }}
-                {% if budget == 0 %}
-                    <small class="text-warning">Set your budget first!</small>
-                {% endif %}
+            <div class="card h-100 text-center bg-primary text-white shadow">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-piggy-bank"></i> Monthly Budget</h5>
+                    <h2 class="display-6 fw-bold">₹{{ "%.2f"|format(budget) }}</h2>
+                    {% if budget == 0 %}
+                        <p class="card-text"><small>Set your budget first!</small></p>
+                    {% endif %}
+                </div>
             </div>
         </div>
         <div class="col-md-4">
-            <div class="alert alert-warning">
-                <h5>Total Spent</h5>
-                ${{ '%.2f'|format(total_spent) }}
+            <div class="card h-100 text-center bg-warning text-dark shadow">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-cash-stack"></i> Total Spent</h5>
+                    <h2 class="display-6 fw-bold">₹{{ "%.2f"|format(total_spent) }}</h2>
+                </div>
             </div>
         </div>
         <div class="col-md-4">
-            {% if budget > 0 %}
-                <div class="alert {{ 'alert-success' if remaining_budget >= 0 else 'alert-danger' }}">
-                    <h5>Remaining Budget</h5>
-                    ${{ '%.2f'|format(remaining_budget) }}
+            <div class="card h-100 text-center {{ 'bg-success text-white' if remaining_budget > 0 else 'bg-danger text-white' }} shadow">
+                <div class="card-body">
+                    <h5 class="card-title"><i class="bi bi-graph-up"></i> Remaining</h5>
+                    <h2 class="display-6 fw-bold">₹{{ "%.2f"|format(remaining_budget) }}</h2>
                 </div>
-            {% else %}
-                <div class="alert alert-secondary">
-                    <h5>Remaining Budget</h5>
-                    <small>Set budget to see remaining</small>
-                </div>
-            {% endif %}
+            </div>
         </div>
     </div>
 
-    <!-- Expenses List -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h2 class="h5 mb-0">This Month's Expenses</h2>
+    <!-- Expenses Table -->
+    <div class="card shadow">
+        <div class="card-header bg-info text-white">
+            <h3 class="h5 mb-0"><i class="bi bi-list-ul me-2"></i>This Month's Expenses ({{ pagination.items|length }} items)</h3>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
             {% if expenses %}
-              <ul class="list-group list-group-flush">
-                {% for expense in expenses %}
-                  <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                    <div class="flex-grow-1">
-                      <div class="fw-bold">{{ expense.date.strftime('%Y-%m-%d') }}</div>
-                      <div>{{ expense.description }}: ${{ '%.2f'|format(expense.amount) }}</div>
-                    </div>
-                    <form class="m-0" action="{{ url_for('delete_expense', id=expense.id) }}" method="post">
-                        <button type="submit" class="btn btn-danger btn-sm"
-                                onclick="return confirm('Delete this expense?')">
-                            Delete
-                        </button>
-                    </form>
-                  </li>
-                {% endfor %}
-              </ul>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th class="text-end">Amount</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in expenses %}
+                            <tr>
+                                <td>{{ expense.date.strftime('%d %b, %Y') }}</td>
+                                <td>{{ expense.description }}</td>
+                                <td class="text-end fw-bold text-primary">₹{{ "%.2f"|format(expense.amount) }}</td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('delete_expense', id=expense.id) }}" 
+                                          class="d-inline" onsubmit="return confirm('Delete this expense?')">
+                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             {% else %}
-              <p class="text-muted mb-0">No expenses recorded this month.</p>
+                <div class="text-center py-5">
+                    <i class="bi bi-wallet display-1 text-muted mb-3"></i>
+                    <h4 class="text-muted">No expenses yet</h4>
+                    <p class="text-muted">Add your first expense above!</p>
+                </div>
             {% endif %}
         </div>
-        <div class="card-footer d-flex justify-content-between align-items-center">
-            <div>
-                {% if pagination.has_prev %}
-                    <a href="{{ url_for('home', page=pagination.prev_num) }}" class="btn btn-sm btn-outline-secondary">Previous</a>
-                {% endif %}
-                {% if pagination.has_next %}
-                    <a href="{{ url_for('home', page=pagination.next_num) }}" class="btn btn-sm btn-outline-secondary ms-2">Next</a>
-                {% endif %}
+        {% if pagination.pages > 1 %}
+        <div class="card-footer bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    {% if pagination.has_prev %}
+                        <a href="?page={{ pagination.prev_num }}" class="btn btn-sm btn-outline-secondary">← Previous</a>
+                    {% endif %}
+                    {% if pagination.has_next %}
+                        <a href="?page={{ pagination.next_num }}" class="btn btn-sm btn-outline-secondary ms-2">Next →</a>
+                    {% endif %}
+                </div>
+                <span class="text-muted">Page {{ pagination.page }} of {{ pagination.pages }}</span>
             </div>
-            <span class="text-muted">Page {{ pagination.page }} of {{ pagination.pages }}</span>
         </div>
+        {% endif %}
     </div>
 
-    <!-- Chart -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h2 class="h5 mb-0">Spending Trends This Month</h2>
+    <!-- Spending Chart -->
+    <div class="card mt-4 shadow">
+        <div class="card-header bg-secondary text-white">
+            <h3 class="h5 mb-0"><i class="bi bi-graph-up me-2"></i>Spending Trends</h3>
         </div>
-        <div class="card-body p-4">
-            <canvas id="spendingChart" height="120"></canvas>
-        </div>
-    </div>
-
-    <!-- Navigation -->
-    <div class="row">
-        <div class="col-md-8">
-            <a href="{{ url_for('experiences') }}" class="btn btn-secondary me-2">My Experiences</a>
-            <a href="{{ url_for('profile') }}" class="btn btn-outline-primary me-2">Profile</a>
-        </div>
-        <div class="col-md-4 text-md-end">
-            <a href="{{ url_for('logout') }}" class="btn btn-danger">Log out</a>
+        <div class="card-body p-0">
+            <canvas id="spendingChart" class="w-100" style="height: 400px;"></canvas>
         </div>
     </div>
 </div>
-
-<!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<!-- Auto-hide flash messages (3 seconds) -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const flashAlerts = document.querySelectorAll('[id^="flash-"]');
-    flashAlerts.forEach(function(alert) {
-        setTimeout(function() {
-            const bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-        }, 3000);
-    });
-});
-</script>
 
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -194,31 +202,34 @@ const chartLabels = {{ chart_labels | tojson | safe }};
 const chartData = {{ chart_data | tojson | safe }};
 
 new Chart(ctx, {
-  type: 'line',
-  data: {
-    labels: chartLabels,
-    datasets: [{
-      label: 'Daily Spending',
-      backgroundColor: 'rgba(54, 162, 235, 0.4)',
-      borderColor: 'rgba(54, 162, 235, 1)',
-      fill: true,
-      data: chartData,
-      tension: 0.1
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    scales: {
-      x: { title: { display: true, text: 'Date' } },
-      y: { 
-        title: { display: true, text: 'Amount ($)' },
-        beginAtZero: true
-      }
+    type: 'line',
+    data: {
+        labels: chartLabels,
+        datasets: [{
+            label: 'Daily Spending (₹)',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            borderColor: 'rgba(40, 167, 69, 1)',
+            fill: true,
+            data: chartData,
+            tension: 0.4,
+            pointBackgroundColor: 'rgba(40, 167, 69, 1)',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: 'rgba(40, 167, 69, 1)'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: { title: { display: true, text: 'Date' } },
+            y: { 
+                title: { display: true, text: 'Amount (₹)' },
+                beginAtZero: true
+            }
+        }
     }
-  }
 });
 </script>
 
-</body>
-</html>
+{% endblock %}
