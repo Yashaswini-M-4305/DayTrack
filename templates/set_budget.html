@@ -1,42 +1,60 @@
 {% extends "base.html" %}
 {% block title %}Set Budget - DayTracker{% endblock %}
+{% set show_navbar = False %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8 col-lg-6">
-        <div class="card shadow-lg border-0">
-            <div class="card-body p-5">
-                <div class="text-center mb-5">
-                    <i class="bi bi-wallet2 display-4 text-success mb-3"></i>
-                    <h2 class="fw-bold text-primary mb-2">Set Monthly Budget</h2>
-                    <p class="text-muted">Current month: {{ "January" if now.month == 1 else "February" if now.month == 2 else "March" }}</p>
-                </div>
-                
-                <form method="POST" class="needs-validation" novalidate>
-                    <div class="row g-4">
+<!-- Custom compact navbar -->
+<nav class="navbar navbar-expand navbar-light bg-light border-bottom shadow-sm mb-4">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold fs-5 text-primary" href="{{ url_for('home') }}">
+            <i class="bi bi-arrow-left me-2"></i>Back to Home
+        </a>
+        <div class="navbar-nav ms-auto gap-2">
+            <a href="{{ url_for('home') }}" class="btn btn-outline-secondary btn-sm px-3">Home</a>
+            <a href="{{ url_for('profile') }}" class="btn btn-outline-primary btn-sm px-3">Profile</a>
+            <a href="{{ url_for('experiences') }}" class="btn btn-outline-info btn-sm px-3">Experiences</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-5">
+                    <div class="text-center mb-5">
+                        <i class="bi bi-wallet2 display-4 text-success mb-3"></i>
+                        <h2 class="fw-bold text-primary mb-2">Set Monthly Budget</h2>
+                        <p class="text-muted fs-5">Current month: {{ now.strftime('%B %Y') }}</p>
+                    </div>
+                    
+                    <!-- 🔥 NO YEAR FIELD - Perfect 2-column layout -->
+                    <form method="POST" class="row g-4 align-items-end">
                         <div class="col-md-8">
-                            <label class="form-label fw-bold fs-5">
-                                <i class="bi bi-currency-rupee me-2"></i>Monthly Budget
+                            <label class="form-label fw-bold fs-5 mb-2">
+                                <i class="bi bi-currency-rupee me-2 text-success"></i>Monthly Budget
                             </label>
                             <div class="input-group input-group-lg">
-                                <span class="input-group-text bg-success text-white">₹</span>
+                                <span class="input-group-text bg-success text-white fs-6">₹</span>
                                 <input type="number" 
                                        name="budget" 
                                        class="form-control form-control-lg" 
-                                       placeholder="5000" 
+                                       placeholder="5000"
                                        step="0.01" 
                                        min="0"
+                                       value="{{ request.form.budget if request.form else '' }}"
                                        required>
                             </div>
-                            <div class="form-text">Enter your monthly spending limit</div>
+                            <div class="form-text mt-1">Enter your monthly spending limit</div>
                         </div>
-                        <div class="col-md-4 d-flex align-items-end">
-                            <button type="submit" class="btn btn-success btn-lg w-100 py-3">
-                                <i class="bi bi-check-circle me-2"></i>Update Budget
+                        
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-success btn-lg w-100 py-3 fs-5 shadow-sm">
+                                <i class="bi bi-check-circle-fill me-2"></i>Update Budget
                             </button>
                         </div>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
