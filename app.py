@@ -157,47 +157,23 @@ def set_budget():
     if request.method == 'POST':
         amount_str = request.form.get('budget', '').strip()
         
-        if not amount_str or amount_str == '0':
-            flash('Please enter a valid budget amount', 'danger')
-            return render_template('set_budget.html', now=now)
-        
         try:
             amount = float(amount_str)
             if amount <= 0:
                 flash('Budget must be greater than 0', 'danger')
                 return render_template('set_budget.html', now=now)
             
-            # 🔥 SIMPLIFIED: UPSERT (Update or Insert)
-            month_str = now.strftime('%m')  # "02"
-            year_str = str(now.year)       # "2026"
-            
-            # Delete ALL existing budgets for this month
-            db.session.query(MonthlyBudget).filter_by(
-                user_id=current_user.id,
-                month=month_str,
-                year=int(year_str)
-            ).delete()
-            
-            # Create fresh budget
-            new_budget = MonthlyBudget(
-                user_id=current_user.id,
-                amount=amount,
-                month=month_str,
-                year=int(year_str)
-            )
-            
-            db.session.add(new_budget)
+            # 🔥 DIRECT USER UPDATE - NO MonthlyBudget needed!
+            current_user.monthly_budget = amount
             db.session.commit()
             
-            flash(f'✅ Budget ₹{amount:,.2f} set for {now.strftime("%B %Y")}!', 'success')
+            flash(f'✅ Budget set to ₹{amount:,.2f} for {now.strftime("%B %Y")}!', 'success')
             return redirect(url_for('home'))
             
         except:
-            db.session.rollback()
-            flash('Failed to set budget. Please try again.', 'danger')
+            flash('Please enter a valid number', 'danger')
     
     return render_template('set_budget.html', now=now)
-
 
 
 @app.route('/add_expense', methods=['POST'])
