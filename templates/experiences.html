@@ -27,18 +27,7 @@
 </nav>
 
 <div class="container-fluid">
-    <!-- Flash Messages (uses base.html auto-hide) -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                <div class="alert alert-{{ 'success' if category == 'message' else category }} 
-                       alert-dismissible fade show mb-4" role="alert" id="flash-{{ loop.index }}">
-                    <i class="bi bi-check-circle me-2"></i>{{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
+    
 
     <div class="row g-4">
         <!-- 🔥 VISITED PLACES -->
