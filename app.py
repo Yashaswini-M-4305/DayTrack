@@ -149,67 +149,55 @@ def home():
         chart_data=chart_data,
         now=today  # For ₹ display
     )
-
 @app.route('/set_budget', methods=['GET', 'POST'])
 @login_required
 def set_budget():
     now = datetime.date.today()
     
     if request.method == 'POST':
+        amount_str = request.form.get('budget', '').strip()
+        
+        if not amount_str or amount_str == '0':
+            flash('Please enter a valid budget amount', 'danger')
+            return render_template('set_budget.html', now=now)
+        
         try:
-            # Get and validate amount
-            amount_str = request.form.get('budget', '').strip()
-            if not amount_str:
-                flash('Budget amount is required', 'danger')
-                return render_template('set_budget.html', now=now)
-            
             amount = float(amount_str)
-            if amount < 0:
-                flash('Budget cannot be negative', 'danger')
+            if amount <= 0:
+                flash('Budget must be greater than 0', 'danger')
                 return render_template('set_budget.html', now=now)
             
-            # Current month format: "2026-02"
-            current_month_str = now.strftime('%Y-%m')  # "2026-02"
-            month_num = now.strftime('%m')  # "02"
-            year_num = now.year  # 2026
+            # 🔥 SIMPLIFIED: UPSERT (Update or Insert)
+            month_str = now.strftime('%m')  # "02"
+            year_str = str(now.year)       # "2026"
             
-            # Delete ANY existing budget for this user/month/year
-            existing_budgets = MonthlyBudget.query.filter_by(
+            # Delete ALL existing budgets for this month
+            db.session.query(MonthlyBudget).filter_by(
                 user_id=current_user.id,
-                month=month_num,
-                year=year_num
-            ).all()
+                month=month_str,
+                year=int(year_str)
+            ).delete()
             
-            for budget in existing_budgets:
-                db.session.delete(budget)
-            
-            # Create NEW budget
+            # Create fresh budget
             new_budget = MonthlyBudget(
                 user_id=current_user.id,
                 amount=amount,
-                month=month_num,  # "02"
-                year=year_num     # 2026
+                month=month_str,
+                year=int(year_str)
             )
+            
             db.session.add(new_budget)
-            
-            # Update user quick-access field
-            current_user.monthly_budget = amount
-            
             db.session.commit()
-            flash('✅ Budget updated successfully for ' + now.strftime('%B %Y') + '!', 'success')
+            
+            flash(f'✅ Budget ₹{amount:,.2f} set for {now.strftime("%B %Y")}!', 'success')
             return redirect(url_for('home'))
             
-        except ValueError:
-            flash('❌ Please enter a valid number for budget', 'danger')
-        except Exception as e:
+        except:
             db.session.rollback()
-            print(f"Budget error: {e}")  # Debug log
-            flash('❌ Failed to update budget. Please try again.', 'danger')
-        finally:
-            # Always redirect to avoid form resubmission
-            return render_template('set_budget.html', now=now)
+            flash('Failed to set budget. Please try again.', 'danger')
     
     return render_template('set_budget.html', now=now)
+
 
 
 @app.route('/add_expense', methods=['POST'])
