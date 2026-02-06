@@ -11,7 +11,8 @@ from itsdangerous import URLSafeTimedSerializer
 app = Flask(__name__)
 app.config['DEBUG'] = True
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///journal.db'
+# 🔥 CRITICAL: Force NEW database file (Render cache bypass)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///journal_fresh.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'your_secret_key_change_this_in_production'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
@@ -70,13 +71,19 @@ class WatchedShow(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# 🔥 ULTIMATE DATABASE FIX: Delete broken tables + create fresh ones
+# 🔥 ULTIMATE RENDER FIX: Delete ALL old DB files + create FRESH database
 with app.app_context():
-    db.drop_all()        # Delete broken tables (missing email column)
-    db.create_all()      # Create PERFECT fresh tables
-    print("✅ Database reset complete!")
+    # Delete ALL possible old database files
+    for db_file in ['journal.db', 'journal_fresh.db']:
+        if os.path.exists(db_file):
+            os.remove(db_file)
+            print(f"🗑️ DELETED: {db_file}")
+    
+    # Create PERFECTLY FRESH database with ALL columns
+    db.create_all()
+    print("✅ FRESH DATABASE CREATED - ALL COLUMNS EXIST!")
 
-# ✅ PUBLIC LANDING PAGE (prevents login loop)
+# ✅ PUBLIC LANDING PAGE (NO login_required)
 @app.route('/')
 def index():
     if current_user.is_authenticated:
@@ -120,7 +127,7 @@ def home():
         Expense.date < next_month_first_day
     )
     
-    pagination = expenses_query.paginate(page=page, per_page=per_page)
+    pagination = expenses_query.paginate(page=page, per_page=per_page, error_out=False)
     expenses_for_chart = expenses_query.all()
 
     daily_spending = defaultdict(float)
@@ -217,7 +224,7 @@ def register():
         db.session.commit()
         login_user(new_user)
         flash('Registration successful!')
-        return redirect(url_for('home'))  # Goes to /home
+        return redirect(url_for('home'))
     return render_template('register.html')
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -233,7 +240,7 @@ def login():
         if user and check_password_hash(user.password, password):
             login_user(user)
             flash('Logged in successfully!')
-            return redirect(url_for('home'))  # Goes to /home
+            return redirect(url_for('home'))
         flash('Wrong username or password!')
     
     return render_template('login.html')
@@ -245,7 +252,6 @@ def logout():
     flash('Logged out!')
     return redirect(url_for('login'))
 
-# ... rest of your routes unchanged (forgot_password, profile, experiences, etc.)
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
@@ -290,17 +296,20 @@ def experiences():
     shows = WatchedShow.query.filter_by(user_id=current_user.id).all()
     return render_template('experiences.html', places=places, foods=foods, shows=shows)
 
-def generate_reset_token(email, secret_key, expiration=3600):
-    s = URLSafeTimedSerializer(secret_key)
-    return s.dumps(email, salt='password-reset-salt')
+@app.route('/add_visited_place', methods=['POST'])
+@login_required
+def add_visited_place():
+    name = request.form['name']
+    review = request.form.get('review', "")
+    new_place = VisitedPlace(name=name, review=review, user_id=current_user.id)
+    db.session.add(new_place)
+    db.session.commit()
+    flash('Visited place added!')
+    return redirect(url_for('experiences'))
 
-def verify_reset_token(token, secret_key, expiration=3600):
-    s = URLSafeTimedSerializer(secret_key)
-    try:
-        email = s.loads(token, salt='password-reset-salt', max_age=expiration)
-    except Exception:
-        return None
-    return email
-
-if __name__ == '__main__':
-    app.run(debug=True)
+@app.route('/add_food_tried', methods=['POST'])
+@login_required
+def add_food_tried():
+    name = request.form['name']
+    review = request.form.get('review', "")
+    new_food = FoodTried(name=name,
