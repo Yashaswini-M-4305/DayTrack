@@ -298,7 +298,11 @@ def reset_password(token):
 @app.route('/profile')
 @login_required
 def profile():
-    return render_template('profile.html', user=current_user)
+    places = VisitedPlace.query.filter_by(user_id=current_user.id).all()
+    foods = FoodTried.query.filter_by(user_id=current_user.id).all()
+    shows = WatchedShow.query.filter_by(user_id=current_user.id).all()
+    return render_template('profile.html', user=current_user, places=places, foods=foods, shows=shows)
+
 
 @app.route('/experiences')
 @login_required
