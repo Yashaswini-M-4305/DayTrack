@@ -157,27 +157,30 @@ def home():
 @login_required
 def set_budget():
     if request.method == 'POST':
-        amount = float(request.form['budget'])
-        month = request.form['month']
-        year = int(request.form['year'])
-        
-        existing = MonthlyBudget.query.filter_by(
-            user_id=current_user.id, 
-            month=month, 
-            year=year
-        ).first()
-        if existing:
-            db.session.delete(existing)
-        
-        new_budget = MonthlyBudget(
-            user_id=current_user.id,
-            amount=amount,
-            month=month,
-            year=year
-        )
-        db.session.add(new_budget)
-        db.session.commit()
-        flash('Monthly budget updated!')
+        try:
+            amount = float(request.form['budget'])
+            month = request.form['month']  # "01", "02", etc.
+            year = int(request.form['year'])
+            
+            existing = MonthlyBudget.query.filter_by(
+                user_id=current_user.id, 
+                month=month, 
+                year=year
+            ).first()
+            if existing:
+                db.session.delete(existing)
+            
+            new_budget = MonthlyBudget(
+                user_id=current_user.id,
+                amount=amount,
+                month=month,
+                year=year
+            )
+            db.session.add(new_budget)
+            db.session.commit()
+            flash('Monthly budget updated!')
+        except Exception:
+            flash('Error setting budget. Try again.')
         return redirect(url_for('home'))
     
     return render_template('set_budget.html')
@@ -185,14 +188,19 @@ def set_budget():
 @app.route('/add_expense', methods=['POST'])
 @login_required
 def add_expense():
-    description = request.form['description']
-    amount = float(request.form['amount'])
-    date = datetime.datetime.strptime(request.form['date'], '%Y-%m-%d').date()
-    new_expense = Expense(description=description, amount=amount, date=date, user_id=current_user.id)
-    db.session.add(new_expense)
-    db.session.commit()
-    flash('Expense added successfully!')
+    try:
+        description = request.form['description']
+        amount = float(request.form['amount'])
+        date_str = request.form['date']
+        date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+        new_expense = Expense(description=description, amount=amount, date=date, user_id=current_user.id)
+        db.session.add(new_expense)
+        db.session.commit()
+        flash('Expense added successfully!')
+    except Exception:
+        flash('Error adding expense. Check date format.')
     return redirect(url_for('home'))
+
 
 @app.route('/delete_expense/<int:id>', methods=['POST'])
 @login_required
